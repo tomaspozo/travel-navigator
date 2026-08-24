@@ -1,14 +1,20 @@
-# Welcome to your Lovable project
+# Travel Navigator
+
+I want you to create an approval flow for travel requests. So team members request for a trip approval, they need to enter where, and why, and a budget, transportation, hotel... they can also mark if they need help with the booking.
+
+Now, there are policies, based on roles: employees, executives... and there can be more...
+
+These policies are about travel length, tickets prices and per diem...
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/eef14d9d-02ef-4a76-99eb-00bb83f1c583).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +26,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
