@@ -194,6 +194,8 @@ function NewRequest() {
         total_budget: total,
         needs_booking_help: form.needs_booking_help,
         policy_violations: violations as unknown as never,
+        ai_review: (aiReview ?? null) as unknown as never,
+        ai_reviewed_at: aiReview?.reviewed_at ?? null,
         exception_justification: form.exception_justification || null,
         status,
         submitted_at: asDraft ? null : new Date().toISOString(),
