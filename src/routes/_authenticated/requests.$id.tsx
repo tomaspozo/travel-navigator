@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { notifyRequestEvent } from "@/lib/notifications.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -61,6 +63,7 @@ function RequestDetail() {
   const { data: me } = useAppUser();
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
+  const notify = useServerFn(notifyRequestEvent);
 
   const { data, isLoading } = useQuery({
     queryKey: ["request", id],
@@ -105,6 +108,8 @@ function RequestDetail() {
           policy_violations: { code: string; label: string; detail: string }[];
           ai_review: AiReview | null;
           exception_justification: string | null;
+          human_review_requested: boolean;
+          human_review_reason: string | null;
           status: RequestStatus;
           requester_id: string;
         },
@@ -182,6 +187,21 @@ function RequestDetail() {
       toast.error(error.message);
       return;
     }
+    try {
+      await notify({
+        data: {
+          requestId: req.id,
+          event: decision === "rejected" ? "rejected" : "approved",
+          ...(comment ? { reason: comment } : {}),
+        },
+      });
+      if (nextStatus === "pending_finance") {
+        await notify({ data: { requestId: req.id, event: "escalated" } });
+      }
+    } catch {
+      // Notifications must never block the decision itself.
+    }
+
     setComment("");
     toast.success(
       decision === "rejected"
@@ -265,6 +285,21 @@ function RequestDetail() {
             <p className="mt-4 rounded-lg bg-background p-3 text-sm">
               <span className="font-medium">Justification: </span>
               {req.exception_justification}
+            </p>
+          )}
+        </div>
+      )}
+
+      {req.human_review_requested && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-6">
+          <h2 className="text-sm font-semibold">Human review requested</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The requester asked an admin to review this trip instead of relying on the AI
+            check.
+          </p>
+          {req.human_review_reason && (
+            <p className="mt-4 rounded-lg bg-background p-3 text-sm">
+              {req.human_review_reason}
             </p>
           )}
         </div>

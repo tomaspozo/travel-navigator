@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { runAiReview } from "@/lib/ai-review.functions";
+import { notifyRequestEvent } from "@/lib/notifications.functions";
 import { reviewHasFailures, type AiReview } from "@/lib/ai-review-types";
 import { AiReviewPanel } from "@/components/ai-review-panel";
 
@@ -87,6 +88,9 @@ function NewRequest() {
   const financeNeeded = needsFinanceReview(total, violations, me?.policy ?? null);
 
   const reviewFn = useServerFn(runAiReview);
+  const notify = useServerFn(notifyRequestEvent);
+  const [humanReason, setHumanReason] = useState("");
+  const [askHuman, setAskHuman] = useState(false);
   const [review, setReview] = useState<AiReview | null>(null);
   const [reviewing, setReviewing] = useState(false);
 
@@ -140,8 +144,9 @@ function NewRequest() {
     }
   }
 
-  async function submit(asDraft: boolean) {
+  async function submit(mode: "draft" | "submit" | "human") {
     if (!me) return;
+    const asDraft = mode === "draft";
     if (!form.destination || !form.purpose || !form.start_date || !form.end_date) {
       toast.error("Destination, purpose and dates are required.");
       return;
@@ -154,18 +159,24 @@ function NewRequest() {
       toast.error("This trip breaks policy — add a justification (10+ characters).");
       return;
     }
+    if (mode === "human" && humanReason.trim().length < 10) {
+      toast.error("Tell the admins why the AI check is wrong (10+ characters).");
+      return;
+    }
 
     let aiReview = review;
-    if (!asDraft) {
+    if (mode === "submit") {
       if (!aiReview) {
         aiReview = await checkWithAi();
         if (!aiReview) return;
       }
       if (reviewHasFailures(aiReview)) {
-        toast.error("The AI review found blocking issues — fix them and re-run the check.");
+        toast.error("The AI review found blocking issues — fix them, or request a human review.");
         return;
       }
     }
+
+
 
 
     setSaving(true);
@@ -197,6 +208,8 @@ function NewRequest() {
         ai_review: (aiReview ?? null) as unknown as never,
         ai_reviewed_at: aiReview?.reviewed_at ?? null,
         exception_justification: form.exception_justification || null,
+        human_review_requested: mode === "human",
+        human_review_reason: mode === "human" ? humanReason : null,
         status,
         submitted_at: asDraft ? null : new Date().toISOString(),
       })
@@ -217,8 +230,31 @@ function NewRequest() {
       });
     }
 
+    if (!asDraft) {
+      try {
+        await notify({ data: { requestId: data.id, event: "submitted" } });
+        if (mode === "human") {
+          await notify({
+            data: {
+              requestId: data.id,
+              event: "human_review_requested",
+              reason: humanReason,
+            },
+          });
+        }
+      } catch {
+        // Never block the submission on notification delivery.
+      }
+    }
+
     setSaving(false);
-    toast.success(asDraft ? "Draft saved." : "Request submitted for approval.");
+    toast.success(
+      asDraft
+        ? "Draft saved."
+        : mode === "human"
+          ? "Sent for human review — admins have been notified."
+          : "Request submitted for approval.",
+    );
     navigate({ to: "/requests/$id", params: { id: data.id } });
   }
 
@@ -420,13 +456,44 @@ function NewRequest() {
         </section>
       )}
 
+      {askHuman && (
+        <section className="space-y-3 rounded-xl border bg-card p-6">
+          <div>
+            <h2 className="text-sm font-semibold">Request human review</h2>
+            <p className="text-sm text-muted-foreground">
+              Skip the AI verdict and send this trip straight to an admin. Explain why you
+              think the AI check is wrong.
+            </p>
+          </div>
+          <Textarea
+            rows={3}
+            placeholder="The AI flagged the hotel rate, but this is a conference-week rate in the venue hotel…"
+            value={humanReason}
+            onChange={(e) => setHumanReason(e.target.value)}
+          />
+          <div className="flex gap-3">
+            <Button onClick={() => submit("human")} disabled={saving}>
+              Send to an admin
+            </Button>
+            <Button variant="ghost" onClick={() => setAskHuman(false)} disabled={saving}>
+              Cancel
+            </Button>
+          </div>
+        </section>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={() => submit(false)} disabled={saving || reviewing}>
+        <Button onClick={() => submit("submit")} disabled={saving || reviewing}>
           Submit for approval
         </Button>
-        <Button variant="outline" onClick={() => submit(true)} disabled={saving}>
+        <Button variant="outline" onClick={() => submit("draft")} disabled={saving}>
           Save as draft
         </Button>
+        {!askHuman && (
+          <Button variant="ghost" onClick={() => setAskHuman(true)} disabled={saving}>
+            Request human review
+          </Button>
+        )}
         {review && (
           <Button variant="ghost" onClick={checkWithAi} disabled={reviewing}>
             {reviewing ? "Reviewing…" : "Re-run AI check"}

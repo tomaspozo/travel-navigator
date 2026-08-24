@@ -17,6 +17,7 @@ import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedRequestsIdRouteImport } from './routes/_authenticated/requests.$id'
 import { Route as AuthenticatedRequestsNewRouteImport } from './routes/_authenticated/requests.new'
+import { Route as ApiPublicCronPendingReviewsRouteImport } from './routes/api/public/cron/pending-reviews'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,12 @@ const AuthenticatedRequestsNewRoute =
     path: '/requests/new',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCronPendingReviewsRoute =
+  ApiPublicCronPendingReviewsRouteImport.update({
+    id: '/api/public/cron/pending-reviews',
+    path: '/api/public/cron/pending-reviews',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/requests/$id': typeof AuthenticatedRequestsIdRoute
   '/requests/new': typeof AuthenticatedRequestsNewRoute
+  '/api/public/cron/pending-reviews': typeof ApiPublicCronPendingReviewsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,6 +84,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/requests/$id': typeof AuthenticatedRequestsIdRoute
   '/requests/new': typeof AuthenticatedRequestsNewRoute
+  '/api/public/cron/pending-reviews': typeof ApiPublicCronPendingReviewsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,6 +96,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/requests/$id': typeof AuthenticatedRequestsIdRoute
   '/_authenticated/requests/new': typeof AuthenticatedRequestsNewRoute
+  '/api/public/cron/pending-reviews': typeof ApiPublicCronPendingReviewsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/requests/$id'
     | '/requests/new'
+    | '/api/public/cron/pending-reviews'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/requests/$id'
     | '/requests/new'
+    | '/api/public/cron/pending-reviews'
   id:
     | '__root__'
     | '/'
@@ -117,12 +129,14 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/requests/$id'
     | '/_authenticated/requests/new'
+    | '/api/public/cron/pending-reviews'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicCronPendingReviewsRoute: typeof ApiPublicCronPendingReviewsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -183,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRequestsNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/cron/pending-reviews': {
+      id: '/api/public/cron/pending-reviews'
+      path: '/api/public/cron/pending-reviews'
+      fullPath: '/api/public/cron/pending-reviews'
+      preLoaderRoute: typeof ApiPublicCronPendingReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -209,6 +230,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicCronPendingReviewsRoute: ApiPublicCronPendingReviewsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
