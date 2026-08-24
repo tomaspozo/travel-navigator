@@ -119,6 +119,7 @@ function PolicyCard({
   onSaved: () => void;
 }) {
   const [form, setForm] = useState(policy);
+  const [eventTypes, setEventTypes] = useState((policy.event_types ?? []).join(", "));
   const [saving, setSaving] = useState(false);
 
   async function save() {
@@ -131,7 +132,11 @@ function PolicyCard({
         max_hotel_per_night: Number(form.max_hotel_per_night),
         per_diem: Number(form.per_diem),
         finance_review_threshold: Number(form.finance_review_threshold),
-      })
+        event_types: eventTypes
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      } as never)
       .eq("id", policy.id);
     setSaving(false);
     if (error) return void toast.error(error.message);
