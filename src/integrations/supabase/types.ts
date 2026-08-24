@@ -14,16 +14,236 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          department: string | null
+          email: string
+          full_name: string
+          id: string
+          manager_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          email: string
+          full_name?: string
+          id: string
+          manager_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          manager_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_approvals: {
+        Row: {
+          approver_id: string | null
+          comment: string | null
+          created_at: string
+          decided_at: string | null
+          decision: Database["public"]["Enums"]["approval_decision"]
+          id: string
+          request_id: string
+          stage: Database["public"]["Enums"]["approval_stage"]
+        }
+        Insert: {
+          approver_id?: string | null
+          comment?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decision?: Database["public"]["Enums"]["approval_decision"]
+          id?: string
+          request_id: string
+          stage: Database["public"]["Enums"]["approval_stage"]
+        }
+        Update: {
+          approver_id?: string | null
+          comment?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decision?: Database["public"]["Enums"]["approval_decision"]
+          id?: string
+          request_id?: string
+          stage?: Database["public"]["Enums"]["approval_stage"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_approvals_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "travel_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      travel_policies: {
+        Row: {
+          finance_review_threshold: number
+          id: string
+          max_hotel_per_night: number
+          max_ticket_price: number
+          max_trip_days: number
+          per_diem: number
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          finance_review_threshold?: number
+          id?: string
+          max_hotel_per_night?: number
+          max_ticket_price?: number
+          max_trip_days?: number
+          per_diem?: number
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          finance_review_threshold?: number
+          id?: string
+          max_hotel_per_night?: number
+          max_ticket_price?: number
+          max_trip_days?: number
+          per_diem?: number
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      travel_requests: {
+        Row: {
+          created_at: string
+          destination: string
+          end_date: string
+          exception_justification: string | null
+          hotel_name: string | null
+          hotel_nightly_rate: number
+          hotel_nights: number
+          id: string
+          needs_booking_help: boolean
+          other_costs: number
+          per_diem_rate: number
+          policy_violations: Json
+          purpose: string
+          requester_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["request_status"]
+          submitted_at: string | null
+          total_budget: number
+          transportation_cost: number
+          transportation_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          end_date: string
+          exception_justification?: string | null
+          hotel_name?: string | null
+          hotel_nightly_rate?: number
+          hotel_nights?: number
+          id?: string
+          needs_booking_help?: boolean
+          other_costs?: number
+          per_diem_rate?: number
+          policy_violations?: Json
+          purpose: string
+          requester_id: string
+          start_date: string
+          status?: Database["public"]["Enums"]["request_status"]
+          submitted_at?: string | null
+          total_budget?: number
+          transportation_cost?: number
+          transportation_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          end_date?: string
+          exception_justification?: string | null
+          hotel_name?: string | null
+          hotel_nightly_rate?: number
+          hotel_nights?: number
+          id?: string
+          needs_booking_help?: boolean
+          other_costs?: number
+          per_diem_rate?: number
+          policy_violations?: Json
+          purpose?: string
+          requester_id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          submitted_at?: string | null
+          total_budget?: number
+          transportation_cost?: number
+          transportation_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_manager_of: {
+        Args: { _employee: string; _manager: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "employee" | "manager" | "finance" | "admin"
+      approval_decision: "pending" | "approved" | "rejected"
+      approval_stage: "manager" | "finance"
+      request_status:
+        | "draft"
+        | "pending_manager"
+        | "pending_finance"
+        | "approved"
+        | "rejected"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +370,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["employee", "manager", "finance", "admin"],
+      approval_decision: ["pending", "approved", "rejected"],
+      approval_stage: ["manager", "finance"],
+      request_status: [
+        "draft",
+        "pending_manager",
+        "pending_finance",
+        "approved",
+        "rejected",
+        "cancelled",
+      ],
+    },
   },
 } as const
