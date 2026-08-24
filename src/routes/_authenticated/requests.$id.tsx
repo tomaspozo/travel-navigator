@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { money, STATUS_LABELS, type RequestStatus } from "@/lib/policy";
+import type { AiReview } from "@/lib/ai-review-types";
+import { AiReviewPanel } from "@/components/ai-review-panel";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -101,6 +103,7 @@ function RequestDetail() {
           total_budget: number;
           needs_booking_help: boolean;
           policy_violations: { code: string; label: string; detail: string }[];
+          ai_review: AiReview | null;
           exception_justification: string | null;
           status: RequestStatus;
           requester_id: string;
@@ -266,6 +269,8 @@ function RequestDetail() {
           )}
         </div>
       )}
+
+      {req.ai_review && <AiReviewPanel review={req.ai_review} />}
 
       <div className="rounded-xl border bg-card p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

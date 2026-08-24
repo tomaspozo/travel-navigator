@@ -16,6 +16,7 @@ export interface TravelPolicy {
   max_hotel_per_night: number;
   per_diem: number;
   finance_review_threshold: number;
+  event_types?: string[] | null;
 }
 
 export interface TripDraft {

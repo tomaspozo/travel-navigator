@@ -8,6 +8,7 @@ import { useAppUser, useTeamProfiles } from "@/hooks/use-app-user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -119,6 +120,7 @@ function PolicyCard({
   onSaved: () => void;
 }) {
   const [form, setForm] = useState(policy);
+  const [eventTypes, setEventTypes] = useState((policy.event_types ?? []).join(", "));
   const [saving, setSaving] = useState(false);
 
   async function save() {
@@ -131,7 +133,11 @@ function PolicyCard({
         max_hotel_per_night: Number(form.max_hotel_per_night),
         per_diem: Number(form.per_diem),
         finance_review_threshold: Number(form.finance_review_threshold),
-      })
+        event_types: eventTypes
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      } as never)
       .eq("id", policy.id);
     setSaving(false);
     if (error) return void toast.error(error.message);
@@ -168,6 +174,21 @@ function PolicyCard({
         {num("max_hotel_per_night", "Max hotel / night")}
         {num("per_diem", "Per diem")}
         {num("finance_review_threshold", "Finance review over")}
+      </div>
+      <div className="mt-4 space-y-2">
+        <Label htmlFor={`${policy.id}-events`}>
+          Approved trip / event types (comma separated)
+        </Label>
+        <Textarea
+          id={`${policy.id}-events`}
+          rows={2}
+          placeholder="client meeting, conference, training…"
+          value={eventTypes}
+          onChange={(e) => setEventTypes(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          The AI reviewer checks each request description against this list.
+        </p>
       </div>
     </div>
   );

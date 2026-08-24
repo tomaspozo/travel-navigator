@@ -1,6 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+import { runAiReview } from "@/lib/ai-review.functions";
+import { reviewHasFailures, type AiReview } from "@/lib/ai-review-types";
+import { AiReviewPanel } from "@/components/ai-review-panel";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAppUser } from "@/hooks/use-app-user";
@@ -80,6 +86,60 @@ function NewRequest() {
   );
   const financeNeeded = needsFinanceReview(total, violations, me?.policy ?? null);
 
+  const reviewFn = useServerFn(runAiReview);
+  const [review, setReview] = useState<AiReview | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+
+  // Any change to the reviewed content invalidates the previous AI verdict.
+  const reviewKey = JSON.stringify([
+    form.destination,
+    form.purpose,
+    form.start_date,
+    form.end_date,
+    form.transportation_type,
+    form.transportation_cost,
+    form.hotel_nightly_rate,
+    form.hotel_nights,
+    form.per_diem_rate,
+    form.other_costs,
+  ]);
+  useEffect(() => {
+    setReview(null);
+  }, [reviewKey]);
+
+  async function checkWithAi(): Promise<AiReview | null> {
+    if (!form.destination || !form.purpose || !form.start_date || !form.end_date) {
+      toast.error("Fill destination, purpose and dates before running the AI check.");
+      return null;
+    }
+    setReviewing(true);
+    try {
+      const result = await reviewFn({
+        data: {
+          destination: form.destination,
+          purpose: form.purpose,
+          start_date: form.start_date,
+          end_date: form.end_date,
+          trip_days: days,
+          transportation_type: form.transportation_type,
+          transportation_cost: Number(form.transportation_cost),
+          hotel_nightly_rate: Number(form.hotel_nightly_rate),
+          hotel_nights: Number(form.hotel_nights),
+          per_diem_rate: Number(form.per_diem_rate),
+          other_costs: Number(form.other_costs),
+          total_budget: total,
+        },
+      });
+      setReview(result);
+      return result;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "The AI review failed.");
+      return null;
+    } finally {
+      setReviewing(false);
+    }
+  }
+
   async function submit(asDraft: boolean) {
     if (!me) return;
     if (!form.destination || !form.purpose || !form.start_date || !form.end_date) {
@@ -94,6 +154,19 @@ function NewRequest() {
       toast.error("This trip breaks policy — add a justification (10+ characters).");
       return;
     }
+
+    let aiReview = review;
+    if (!asDraft) {
+      if (!aiReview) {
+        aiReview = await checkWithAi();
+        if (!aiReview) return;
+      }
+      if (reviewHasFailures(aiReview)) {
+        toast.error("The AI review found blocking issues — fix them and re-run the check.");
+        return;
+      }
+    }
+
 
     setSaving(true);
     const hasManager = !!me.profile?.manager_id;
@@ -121,6 +194,8 @@ function NewRequest() {
         total_budget: total,
         needs_booking_help: form.needs_booking_help,
         policy_violations: violations as unknown as never,
+        ai_review: (aiReview ?? null) as unknown as never,
+        ai_reviewed_at: aiReview?.reviewed_at ?? null,
         exception_justification: form.exception_justification || null,
         status,
         submitted_at: asDraft ? null : new Date().toISOString(),
@@ -328,13 +403,35 @@ function NewRequest() {
         </section>
       )}
 
+      {review ? (
+        <AiReviewPanel review={review} />
+      ) : (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-6">
+          <div>
+            <h2 className="text-sm font-semibold">AI review</h2>
+            <p className="text-sm text-muted-foreground">
+              Checks your description, whether the trip matches an approved trip type, and
+              whether the budget is realistic for {form.destination || "the destination"}.
+            </p>
+          </div>
+          <Button variant="secondary" onClick={checkWithAi} disabled={reviewing}>
+            {reviewing ? "Reviewing…" : "Run AI check"}
+          </Button>
+        </section>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={() => submit(false)} disabled={saving}>
+        <Button onClick={() => submit(false)} disabled={saving || reviewing}>
           Submit for approval
         </Button>
         <Button variant="outline" onClick={() => submit(true)} disabled={saving}>
           Save as draft
         </Button>
+        {review && (
+          <Button variant="ghost" onClick={checkWithAi} disabled={reviewing}>
+            {reviewing ? "Reviewing…" : "Re-run AI check"}
+          </Button>
+        )}
         <p className="text-xs text-muted-foreground">
           {financeNeeded
             ? "This request will need finance/executive sign-off after your manager."
