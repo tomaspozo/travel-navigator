@@ -95,6 +95,7 @@ export type Database = {
       }
       travel_policies: {
         Row: {
+          event_types: string[]
           finance_review_threshold: number
           id: string
           max_hotel_per_night: number
@@ -105,6 +106,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          event_types?: string[]
           finance_review_threshold?: number
           id?: string
           max_hotel_per_night?: number
@@ -115,6 +117,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          event_types?: string[]
           finance_review_threshold?: number
           id?: string
           max_hotel_per_night?: number
@@ -128,6 +131,8 @@ export type Database = {
       }
       travel_requests: {
         Row: {
+          ai_review: Json | null
+          ai_reviewed_at: string | null
           created_at: string
           destination: string
           end_date: string
@@ -151,6 +156,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_review?: Json | null
+          ai_reviewed_at?: string | null
           created_at?: string
           destination: string
           end_date: string
@@ -174,6 +181,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_review?: Json | null
+          ai_reviewed_at?: string | null
           created_at?: string
           destination?: string
           end_date?: string
