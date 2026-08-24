@@ -101,6 +101,7 @@ function RequestDetail() {
           total_budget: number;
           needs_booking_help: boolean;
           policy_violations: { code: string; label: string; detail: string }[];
+          ai_review: AiReview | null;
           exception_justification: string | null;
           status: RequestStatus;
           requester_id: string;
