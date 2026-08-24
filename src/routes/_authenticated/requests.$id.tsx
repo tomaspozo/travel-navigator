@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { money, STATUS_LABELS, type RequestStatus } from "@/lib/policy";
+import type { AiReview } from "@/lib/ai-review-types";
+import { AiReviewPanel } from "@/components/ai-review-panel";
 import {
   AlertTriangle,
   ArrowLeft,
