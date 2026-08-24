@@ -174,6 +174,21 @@ function PolicyCard({
         {num("per_diem", "Per diem")}
         {num("finance_review_threshold", "Finance review over")}
       </div>
+      <div className="mt-4 space-y-2">
+        <Label htmlFor={`${policy.id}-events`}>
+          Approved trip / event types (comma separated)
+        </Label>
+        <Textarea
+          id={`${policy.id}-events`}
+          rows={2}
+          placeholder="client meeting, conference, training…"
+          value={eventTypes}
+          onChange={(e) => setEventTypes(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          The AI reviewer checks each request description against this list.
+        </p>
+      </div>
     </div>
   );
 }
