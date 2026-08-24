@@ -85,7 +85,7 @@ function RequestDetail() {
       ]);
 
       return {
-        req: req as Record<string, never> & {
+        req: req as unknown as {
           id: string;
           destination: string;
           purpose: string;

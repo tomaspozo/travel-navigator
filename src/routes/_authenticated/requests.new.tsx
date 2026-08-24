@@ -120,7 +120,7 @@ function NewRequest() {
         other_costs: form.other_costs,
         total_budget: total,
         needs_booking_help: form.needs_booking_help,
-        policy_violations: violations,
+        policy_violations: violations as unknown as never,
         exception_justification: form.exception_justification || null,
         status,
         submitted_at: asDraft ? null : new Date().toISOString(),
