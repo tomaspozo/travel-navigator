@@ -290,6 +290,21 @@ function RequestDetail() {
         </div>
       )}
 
+      {req.human_review_requested && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-6">
+          <h2 className="text-sm font-semibold">Human review requested</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The requester asked an admin to review this trip instead of relying on the AI
+            check.
+          </p>
+          {req.human_review_reason && (
+            <p className="mt-4 rounded-lg bg-background p-3 text-sm">
+              {req.human_review_reason}
+            </p>
+          )}
+        </div>
+      )}
+
       {req.ai_review && <AiReviewPanel review={req.ai_review} />}
 
       <div className="rounded-xl border bg-card p-6">
