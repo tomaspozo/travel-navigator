@@ -270,6 +270,8 @@ function RequestDetail() {
         </div>
       )}
 
+      {req.ai_review && <AiReviewPanel review={req.ai_review} />}
+
       <div className="rounded-xl border bg-card p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Approval timeline
