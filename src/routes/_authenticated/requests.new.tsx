@@ -403,13 +403,35 @@ function NewRequest() {
         </section>
       )}
 
+      {review ? (
+        <AiReviewPanel review={review} />
+      ) : (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-6">
+          <div>
+            <h2 className="text-sm font-semibold">AI review</h2>
+            <p className="text-sm text-muted-foreground">
+              Checks your description, whether the trip matches an approved trip type, and
+              whether the budget is realistic for {form.destination || "the destination"}.
+            </p>
+          </div>
+          <Button variant="secondary" onClick={checkWithAi} disabled={reviewing}>
+            {reviewing ? "Reviewing…" : "Run AI check"}
+          </Button>
+        </section>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={() => submit(false)} disabled={saving}>
+        <Button onClick={() => submit(false)} disabled={saving || reviewing}>
           Submit for approval
         </Button>
         <Button variant="outline" onClick={() => submit(true)} disabled={saving}>
           Save as draft
         </Button>
+        {review && (
+          <Button variant="ghost" onClick={checkWithAi} disabled={reviewing}>
+            {reviewing ? "Reviewing…" : "Re-run AI check"}
+          </Button>
+        )}
         <p className="text-xs text-muted-foreground">
           {financeNeeded
             ? "This request will need finance/executive sign-off after your manager."
