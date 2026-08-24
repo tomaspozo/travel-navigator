@@ -9,6 +9,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAppUser } from "@/hooks/use-app-user";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notification-bell";
 import { Plane, LayoutDashboard, Inbox, Settings, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -63,6 +64,7 @@ function AuthedLayout() {
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {me?.profile?.full_name || me?.email}
             </span>
+            <NotificationBell />
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="size-4" />
               <span className="sr-only sm:not-sr-only">Sign out</span>

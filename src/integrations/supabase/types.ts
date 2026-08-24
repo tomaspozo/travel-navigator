@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          emailed_at: string | null
+          id: string
+          kind: string
+          read_at: string | null
+          request_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          emailed_at?: string | null
+          id?: string
+          kind: string
+          read_at?: string | null
+          request_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          emailed_at?: string | null
+          id?: string
+          kind?: string
+          read_at?: string | null
+          request_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "travel_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -140,7 +184,10 @@ export type Database = {
           hotel_name: string | null
           hotel_nightly_rate: number
           hotel_nights: number
+          human_review_reason: string | null
+          human_review_requested: boolean
           id: string
+          last_reminded_at: string | null
           needs_booking_help: boolean
           other_costs: number
           per_diem_rate: number
@@ -165,7 +212,10 @@ export type Database = {
           hotel_name?: string | null
           hotel_nightly_rate?: number
           hotel_nights?: number
+          human_review_reason?: string | null
+          human_review_requested?: boolean
           id?: string
+          last_reminded_at?: string | null
           needs_booking_help?: boolean
           other_costs?: number
           per_diem_rate?: number
@@ -190,7 +240,10 @@ export type Database = {
           hotel_name?: string | null
           hotel_nightly_rate?: number
           hotel_nights?: number
+          human_review_reason?: string | null
+          human_review_requested?: boolean
           id?: string
+          last_reminded_at?: string | null
           needs_booking_help?: boolean
           other_costs?: number
           per_diem_rate?: number
@@ -241,6 +294,7 @@ export type Database = {
         Args: { _employee: string; _manager: string }
         Returns: boolean
       }
+      verify_cron_token: { Args: { _token: string }; Returns: boolean }
     }
     Enums: {
       app_role: "employee" | "manager" | "finance" | "admin"
