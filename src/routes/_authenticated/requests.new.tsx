@@ -86,6 +86,60 @@ function NewRequest() {
   );
   const financeNeeded = needsFinanceReview(total, violations, me?.policy ?? null);
 
+  const reviewFn = useServerFn(runAiReview);
+  const [review, setReview] = useState<AiReview | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+
+  // Any change to the reviewed content invalidates the previous AI verdict.
+  const reviewKey = JSON.stringify([
+    form.destination,
+    form.purpose,
+    form.start_date,
+    form.end_date,
+    form.transportation_type,
+    form.transportation_cost,
+    form.hotel_nightly_rate,
+    form.hotel_nights,
+    form.per_diem_rate,
+    form.other_costs,
+  ]);
+  useEffect(() => {
+    setReview(null);
+  }, [reviewKey]);
+
+  async function checkWithAi(): Promise<AiReview | null> {
+    if (!form.destination || !form.purpose || !form.start_date || !form.end_date) {
+      toast.error("Fill destination, purpose and dates before running the AI check.");
+      return null;
+    }
+    setReviewing(true);
+    try {
+      const result = await reviewFn({
+        data: {
+          destination: form.destination,
+          purpose: form.purpose,
+          start_date: form.start_date,
+          end_date: form.end_date,
+          trip_days: days,
+          transportation_type: form.transportation_type,
+          transportation_cost: Number(form.transportation_cost),
+          hotel_nightly_rate: Number(form.hotel_nightly_rate),
+          hotel_nights: Number(form.hotel_nights),
+          per_diem_rate: Number(form.per_diem_rate),
+          other_costs: Number(form.other_costs),
+          total_budget: total,
+        },
+      });
+      setReview(result);
+      return result;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "The AI review failed.");
+      return null;
+    } finally {
+      setReviewing(false);
+    }
+  }
+
   async function submit(asDraft: boolean) {
     if (!me) return;
     if (!form.destination || !form.purpose || !form.start_date || !form.end_date) {
@@ -100,6 +154,19 @@ function NewRequest() {
       toast.error("This trip breaks policy — add a justification (10+ characters).");
       return;
     }
+
+    let aiReview = review;
+    if (!asDraft) {
+      if (!aiReview) {
+        aiReview = await checkWithAi();
+        if (!aiReview) return;
+      }
+      if (reviewHasFailures(aiReview)) {
+        toast.error("The AI review found blocking issues — fix them and re-run the check.");
+        return;
+      }
+    }
+
 
     setSaving(true);
     const hasManager = !!me.profile?.manager_id;
