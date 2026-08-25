@@ -321,6 +321,10 @@ function NewRequest() {
     navigate({ to: "/requests/$id", params: { id: data.id } });
   }
 
+  if (loadingDraft) {
+    return <p className="text-sm text-muted-foreground">Loading draft…</p>;
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
@@ -328,11 +332,14 @@ function NewRequest() {
       </Button>
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New travel request</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {editId ? "Edit draft request" : "New travel request"}
+        </h1>
         <p className="text-sm text-muted-foreground">
           Costs are checked live against your travel policy.
         </p>
       </div>
+
 
       <section className="space-y-4 rounded-xl border bg-card p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
