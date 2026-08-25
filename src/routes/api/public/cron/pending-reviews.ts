@@ -62,6 +62,12 @@ export const Route = createFileRoute("/api/public/cron/pending-reviews")({
           reminded += 1;
         }
 
+        const { logApiCall } = await import("@/lib/api-audit.server");
+        await logApiCall("cron/pending-reviews", {
+          pending: pending?.length ?? 0,
+          reminded,
+        });
+
         return Response.json({ ok: true, pending: pending?.length ?? 0, reminded });
       },
     },
