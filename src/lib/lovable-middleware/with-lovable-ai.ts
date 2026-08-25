@@ -49,6 +49,16 @@ export interface WithLovableAIConfig {
  * without matching on message text. Callers that want the old loud behaviour
  * turn a result into a throw at the edge — see `ai-review.functions.ts`.
  *
+ * Bundling note: because `.middleware([...])` lives in a `*.functions.ts` file
+ * that ships to the client, this module is client-reachable and its chunk
+ * (~1.4 KB) is emitted into the client build — the gateway URL and the *name*
+ * `LOVABLE_API_KEY`, never its value. Neither `withSupabase` nor `jose` follows,
+ * because those are referenced only inside the stripped `.server()` body.
+ * Deferring construction behind a factory or a dynamic `import()` does not
+ * change this: a dynamic import still emits the chunk. Keep secrets out of
+ * module scope here — reading them through `getEnv` at request time, as below,
+ * is what makes that safe.
+ *
  * The key is read through `getEnv` on first use, never at module load:
  * on Workers (this template's production target) env bindings arrive per
  * request and are not ambient, so reading in the outer `(config) =>` stage
