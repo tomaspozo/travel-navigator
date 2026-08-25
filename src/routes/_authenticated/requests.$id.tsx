@@ -222,9 +222,23 @@ function RequestDetail() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
-        <ArrowLeft className="size-4" /> Back
-      </Button>
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
+          <ArrowLeft className="size-4" /> Back
+        </Button>
+        {req.status === "draft" && req.requester_id === me?.userId && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              navigate({ to: "/requests/new", search: { edit: req.id } })
+            }
+          >
+            <Pencil className="size-4" /> Edit draft
+          </Button>
+        )}
+      </div>
+
 
       <div className="rounded-xl border bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
