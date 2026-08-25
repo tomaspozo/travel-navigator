@@ -33,7 +33,7 @@
         "@radix-ui/react-toggle-group": "^1.1.11",
         "@radix-ui/react-tooltip": "^1.2.8",
         "@supabase/middleware": "0.3.1",
-        "@supabase/server": "1.5.0-rc.107",
+        "@supabase/server": "1.5.0-rc.114",
         "@supabase/supabase-js": "^2.112.3",
         "@tailwindcss/vite": "^4.2.1",
         "@tanstack/react-query": "^5.101.1",
@@ -390,7 +390,7 @@
 
     "@supabase/realtime-js": ["@supabase/realtime-js@2.112.3", "", { "dependencies": { "@supabase/phoenix": "0.4.5", "tslib": "2.8.1" } }, "sha512-E6wljXWs7DUOloyIB69i3YFInWE6IyCvgTAbQ0KYxOHv26FdA1KzEXTuzxrYEdf70t406Z9BRwUlGyclGF2FXA=="],
 
-    "@supabase/server": ["@supabase/server@1.5.0-rc.107", "", { "dependencies": { "@supabase/middleware": "^0.3.0", "jose": "^6.2.0" }, "peerDependencies": { "@nestjs/common": "^10.0.0 || ^11.0.0", "@supabase/supabase-js": "^2.0.0", "elysia": "^1.4.0", "h3": "^2.0.0", "hono": "^4.0.0", "pg": "^8.0.0" }, "optionalPeers": ["@nestjs/common", "elysia", "h3", "hono", "pg"] }, "sha512-tv1Vg2zvc1W/KGRQcSywHYub8MokXVg3aDSROnN/UrfH90X3qiMngegXWSQ/tZTHdqkxwB8WaZA4wvcXbkgNUQ=="],
+    "@supabase/server": ["@supabase/server@1.5.0-rc.114", "", { "dependencies": { "@supabase/middleware": "^0.3.1", "jose": "^6.2.0" }, "peerDependencies": { "@nestjs/common": "^10.0.0 || ^11.0.0", "@supabase/supabase-js": "^2.0.0", "elysia": "^1.4.0", "h3": "^2.0.0", "hono": "^4.0.0", "pg": "^8.0.0" }, "optionalPeers": ["@nestjs/common", "elysia", "h3", "hono", "pg"] }, "sha512-H3/riTkn5fwMXNnYk0I4e5hjo/SwUhRiMvy/DwWko20sqzsEJYyxfcjjpmBC+10BBQEzbxhfmJ0xyeLNEiJuPg=="],
 
     "@supabase/storage-js": ["@supabase/storage-js@2.112.3", "", { "dependencies": { "iceberg-js": "^0.8.1", "tslib": "2.8.1" } }, "sha512-oSK61tzlUvg+BWPqpKQCu9qqonsO26btaoAR9D6Gest2aj7xUqToj9rKyaoYOJczkhg9BjqA1REbYy9tPI4bDA=="],
 

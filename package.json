@@ -44,7 +44,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/middleware": "0.3.1",
-    "@supabase/server": "1.5.0-rc.107",
+    "@supabase/server": "1.5.0-rc.114",
     "@supabase/supabase-js": "^2.112.3",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.101.1",
