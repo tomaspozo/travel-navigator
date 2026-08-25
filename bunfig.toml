@@ -4,4 +4,14 @@ saveTextLockfile = true
 minimumReleaseAge = 86400
 # Each entry bypasses the 24h guard for one package — confirm with the user
 # before adding any.
-minimumReleaseAgeExcludes = ["@lovable.dev/vite-tanstack-config", "@lovable.dev/mcp-js", "@lovable.dev/email-js", "@lovable.dev/webhooks-js"]
+minimumReleaseAgeExcludes = [
+  "@lovable.dev/vite-tanstack-config",
+  "@lovable.dev/mcp-js",
+  "@lovable.dev/email-js",
+  "@lovable.dev/webhooks-js",
+  # Pre-1.0 packages tracked on their rc/beta line for this migration. Both are
+  # pinned to exact versions in package.json, so the guard would only block the
+  # first install on a fresh clone.
+  "@supabase/server",
+  "@supabase/middleware",
+]
