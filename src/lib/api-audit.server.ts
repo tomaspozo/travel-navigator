@@ -17,15 +17,19 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const FINGERPRINT_LENGTH = 5;
 
 let cachedFingerprint: string | null | undefined;
+let cachedFormat: "modern" | "legacy" | null | undefined;
 
-async function serviceKeyFingerprint(): Promise<string | null> {
-  if (cachedFingerprint !== undefined) return cachedFingerprint;
+async function loadKeyInfo(): Promise<void> {
+  if (cachedFingerprint !== undefined) return;
 
   const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
   if (!key) {
     cachedFingerprint = null;
-    return null;
+    cachedFormat = null;
+    return;
   }
+
+  cachedFormat = key.startsWith("sb_se") ? "modern" : "legacy";
 
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
   const hex = Array.from(new Uint8Array(digest))
@@ -33,8 +37,8 @@ async function serviceKeyFingerprint(): Promise<string | null> {
     .join("");
 
   cachedFingerprint = hex.slice(0, FINGERPRINT_LENGTH);
-  return cachedFingerprint;
 }
+
 
 
 /**
