@@ -68,12 +68,16 @@ function Admin() {
         <TabsList>
           <TabsTrigger value="policies">Policies</TabsTrigger>
           <TabsTrigger value="people">People &amp; roles</TabsTrigger>
+          <TabsTrigger value="logs">API logs</TabsTrigger>
         </TabsList>
         <TabsContent value="policies" className="pt-4">
           <PoliciesPanel />
         </TabsContent>
         <TabsContent value="people" className="pt-4">
           <PeoplePanel />
+        </TabsContent>
+        <TabsContent value="logs" className="pt-4">
+          <ApiLogPanel />
         </TabsContent>
       </Tabs>
     </div>
