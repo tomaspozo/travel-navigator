@@ -1,23 +1,15 @@
+import type { OutboundEmail } from "@/lib/lovable-middleware/with-lovable-email";
+
+export type { OutboundEmail };
+
 /**
- * Single integration point for outbound email.
+ * The Voyara email template.
  *
- * Managed email delivery requires a verified sender domain for the project.
- * Until one is configured, this logs the message server-side and reports that
- * it was not delivered, so notification records stay accurate.
+ * Delivery moved to `withLovableEmail` (provider, API key, sender address,
+ * the disabled-path behaviour). What stays here is the part that is this
+ * product's rather than the platform's: wording and branding. The middleware
+ * takes this function as its `render` config.
  */
-export interface OutboundEmail {
-  to: string;
-  subject: string;
-  heading: string;
-  body: string;
-  actionUrl?: string | undefined;
-  actionLabel?: string | undefined;
-}
-
-export function emailEnabled(): boolean {
-  return Boolean(process.env["EMAIL_SENDER_ADDRESS"] && process.env["RESEND_API_KEY"]);
-}
-
 export function renderEmailHtml(mail: OutboundEmail): string {
   const action = mail.actionUrl
     ? `<p style="margin:24px 0"><a href="${mail.actionUrl}" style="background:#0f766e;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">${mail.actionLabel ?? "Open request"}</a></p>`
@@ -29,36 +21,4 @@ export function renderEmailHtml(mail: OutboundEmail): string {
   ${action}
   <p style="font-size:12px;color:#94a3b8;margin-top:32px">You receive this because you are involved in this travel request.</p>
 </div>`;
-}
-
-/** Returns true when the message was actually handed to a delivery provider. */
-export async function deliverEmail(mail: OutboundEmail): Promise<boolean> {
-  if (!emailEnabled()) {
-    console.info("[email] skipped (no sender domain configured):", mail.to, mail.subject);
-    return false;
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${process.env["RESEND_API_KEY"]}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env["EMAIL_SENDER_ADDRESS"],
-        to: [mail.to],
-        subject: mail.subject,
-        html: renderEmailHtml(mail),
-      }),
-    });
-    if (!res.ok) {
-      console.error("[email] delivery failed", res.status, await res.text());
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error("[email] delivery error", error);
-    return false;
-  }
 }

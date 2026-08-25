@@ -1,5 +1,7 @@
 import { withSupabase } from "@supabase/server";
 
+import { withLovableEmail } from "@/lib/lovable-middleware/with-lovable-email";
+import { renderEmailHtml } from "@/lib/email.server";
 import type { Database } from "@/integrations/supabase/types";
 
 /**
@@ -18,8 +20,18 @@ import type { Database } from "@/integrations/supabase/types";
  * `secret:cron` also points `ctx.supabaseAdmin` at `secretKeys['cron']` rather
  * than `default`, so that entry has to hold a real Supabase secret key.
  */
-export const handlePendingReviews = withSupabase<Database>(
-  { auth: "secret:cron", cors: "disabled" },
+// Hoisted so its tuple type can be passed explicitly below. Supplying only
+// `<Database>` would leave `Entries` on its default `readonly AnyEntry[]` —
+// TypeScript has no partial type-argument inference — and every contribution
+// from this array would erase, taking `ctx.email` with it.
+const cronMiddleware = [withLovableEmail({ render: renderEmailHtml })] as const;
+
+export const handlePendingReviews = withSupabase<Database, typeof cronMiddleware>(
+  {
+    auth: "secret:cron",
+    cors: "disabled",
+    middleware: cronMiddleware,
+  },
   async (_req, ctx) => {
     const notifications = await import("@/lib/notifications.server");
     const { supabaseAdmin } = ctx;
@@ -38,20 +50,21 @@ export const handlePendingReviews = withSupabase<Database>(
       const last = row.last_reminded_at ? new Date(row.last_reminded_at).getTime() : 0;
       if (last > cutoff) continue;
 
-      const summary = await notifications.requestSummary(row.id as string);
+      const summary = await notifications.requestSummary(ctx, row.id as string);
       if (!summary) continue;
 
       const stage = row.status === "pending_manager" ? "manager" : "finance";
       const targets = await notifications.reviewerTargets(
+        ctx,
         stage as "manager" | "finance",
         stage === "manager" ? summary.managerId : null,
       );
-      const admins = await notifications.adminTargets();
+      const admins = await notifications.adminTargets(ctx);
       const all = [...targets, ...admins].filter(
         (t, i, arr) => arr.findIndex((x) => x.userId === t.userId) === i,
       );
 
-      await notifications.notifyUsers(all, {
+      await notifications.notifyUsers(ctx, all, {
         kind: "pending_review_reminder",
         title: `Still waiting for review — ${summary.req.destination}`,
         requestId: summary.req.id,

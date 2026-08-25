@@ -1,12 +1,7 @@
 export type AppRole = "employee" | "manager" | "finance" | "admin";
 
 export type RequestStatus =
-  | "draft"
-  | "pending_manager"
-  | "pending_finance"
-  | "approved"
-  | "rejected"
-  | "cancelled";
+  "draft" | "pending_manager" | "pending_finance" | "approved" | "rejected" | "cancelled";
 
 export interface TravelPolicy {
   id: string;
@@ -77,10 +72,7 @@ export function money(value: number): string {
   }).format(Number(value || 0));
 }
 
-export function evaluatePolicy(
-  trip: TripDraft,
-  policy: TravelPolicy | null,
-): PolicyViolation[] {
+export function evaluatePolicy(trip: TripDraft, policy: TravelPolicy | null): PolicyViolation[] {
   if (!policy) return [];
   const out: PolicyViolation[] = [];
   const days = tripDays(trip.start_date, trip.end_date);

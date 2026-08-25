@@ -44,11 +44,7 @@ export const AI_CHECK_LABELS: Record<
   budget_realism: "Budget vs. destination",
 };
 
-export const AI_CHECK_KEYS = [
-  "description_quality",
-  "event_type_fit",
-  "budget_realism",
-] as const;
+export const AI_CHECK_KEYS = ["description_quality", "event_type_fit", "budget_realism"] as const;
 
 export function reviewHasFailures(review: AiReview | null | undefined): boolean {
   if (!review) return false;
