@@ -236,40 +236,49 @@ function NewRequest() {
         ? "pending_manager"
         : "pending_finance";
 
-    const { data, error } = await supabase
-      .from("travel_requests")
-      .insert({
-        requester_id: me.userId,
-        destination: form.destination,
-        purpose: form.purpose,
-        start_date: form.start_date,
-        end_date: form.end_date,
-        transportation_type: form.transportation_type,
-        transportation_cost: form.transportation_cost,
-        hotel_name: form.hotel_name || null,
-        hotel_nightly_rate: form.hotel_nightly_rate,
-        hotel_nights: form.hotel_nights,
-        per_diem_rate: form.per_diem_rate,
-        other_costs: form.other_costs,
-        total_budget: total,
-        needs_booking_help: form.needs_booking_help,
-        policy_violations: violations as unknown as never,
-        ai_review: (aiReview ?? null) as unknown as never,
-        ai_reviewed_at: aiReview?.reviewed_at ?? null,
-        exception_justification: form.exception_justification || null,
-        human_review_requested: mode === "human",
-        human_review_reason: mode === "human" ? humanReason : null,
-        status,
-        submitted_at: asDraft ? null : new Date().toISOString(),
-      })
-      .select("id")
-      .single();
+    const values = {
+      destination: form.destination,
+      purpose: form.purpose,
+      start_date: form.start_date,
+      end_date: form.end_date,
+      transportation_type: form.transportation_type,
+      transportation_cost: form.transportation_cost,
+      hotel_name: form.hotel_name || null,
+      hotel_nightly_rate: form.hotel_nightly_rate,
+      hotel_nights: form.hotel_nights,
+      per_diem_rate: form.per_diem_rate,
+      other_costs: form.other_costs,
+      total_budget: total,
+      needs_booking_help: form.needs_booking_help,
+      policy_violations: violations as unknown as never,
+      ai_review: (aiReview ?? null) as unknown as never,
+      ai_reviewed_at: aiReview?.reviewed_at ?? null,
+      exception_justification: form.exception_justification || null,
+      human_review_requested: mode === "human",
+      human_review_reason: mode === "human" ? humanReason : null,
+      status,
+      submitted_at: asDraft ? null : new Date().toISOString(),
+    };
+
+    const { data, error } = editId
+      ? await supabase
+          .from("travel_requests")
+          .update(values)
+          .eq("id", editId)
+          .select("id")
+          .single()
+      : await supabase
+          .from("travel_requests")
+          .insert({ requester_id: me.userId, ...values })
+          .select("id")
+          .single();
 
     if (error || !data) {
       setSaving(false);
       toast.error(error?.message ?? "Could not save the request.");
       return;
     }
+
 
     if (!asDraft) {
       await supabase.from("request_approvals").insert({
