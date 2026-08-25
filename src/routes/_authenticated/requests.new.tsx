@@ -230,11 +230,12 @@ function NewRequest() {
 
     setSaving(true);
     const hasManager = !!me.profile?.manager_id;
-    const status = asDraft
+    const status: "draft" | "pending_manager" | "pending_finance" = asDraft
       ? "draft"
       : hasManager
         ? "pending_manager"
         : "pending_finance";
+
 
     const values = {
       destination: form.destination,
