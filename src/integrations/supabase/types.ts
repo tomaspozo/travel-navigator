@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_call_logs: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          key_fingerprint: string | null
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          key_fingerprint?: string | null
+          payload?: Json
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          key_fingerprint?: string | null
+          payload?: Json
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string
