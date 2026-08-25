@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ApiLogPanel } from "@/components/api-log-panel";
 import { ROLE_LABELS, type AppRole, type TravelPolicy } from "@/lib/policy";
 
 export const Route = createFileRoute("/_authenticated/admin")({
