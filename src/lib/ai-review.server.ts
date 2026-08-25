@@ -1,4 +1,5 @@
 import type { AiReview, AiReviewCheck, AiReviewInput } from "./ai-review-types";
+import { logApiCall } from "./api-audit.server";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-2.5-flash";
@@ -20,7 +21,14 @@ function fallbackCheck(summary: string): AiReviewCheck {
 
 export async function reviewTravelRequest(input: AiReviewInput): Promise<AiReview> {
   const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("AI review is not configured.");
+  if (!apiKey) {
+    await logApiCall("ai/review", {
+      provider: "lovable-ai",
+      model: MODEL,
+      outcome: "skipped_not_configured",
+    });
+    throw new Error("AI review is not configured.");
+  }
 
   const nights = input.hotel_nights;
   const prompt = `You are the travel-policy reviewer for a company travel approval tool.
@@ -51,36 +59,54 @@ Run exactly three checks and be strict but fair:
 
 Keep every summary under 320 characters, plain language, addressed to the requester.`;
 
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: "user", content: prompt }],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "submit_review",
-            description: "Return the three validation results.",
-            parameters: {
-              type: "object",
-              properties: {
-                description_quality: CHECK_SCHEMA,
-                event_type_fit: CHECK_SCHEMA,
-                budget_realism: CHECK_SCHEMA,
+  let res: Response;
+  try {
+    res = await fetch(GATEWAY, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "submit_review",
+              description: "Return the three validation results.",
+              parameters: {
+                type: "object",
+                properties: {
+                  description_quality: CHECK_SCHEMA,
+                  event_type_fit: CHECK_SCHEMA,
+                  budget_realism: CHECK_SCHEMA,
+                },
+                required: ["description_quality", "event_type_fit", "budget_realism"],
+                additionalProperties: false,
               },
-              required: ["description_quality", "event_type_fit", "budget_realism"],
-              additionalProperties: false,
             },
           },
-        },
-      ],
-      tool_choice: { type: "function", function: { name: "submit_review" } },
-    }),
+        ],
+        tool_choice: { type: "function", function: { name: "submit_review" } },
+      }),
+    });
+  } catch (error) {
+    await logApiCall("ai/review", {
+      provider: "lovable-ai",
+      model: MODEL,
+      outcome: "network_error",
+      error_type: error instanceof Error ? error.name : "UnknownError",
+    });
+    throw new Error("The AI reviewer is unavailable right now.");
+  }
+
+  await logApiCall("ai/review", {
+    provider: "lovable-ai",
+    model: MODEL,
+    outcome: res.ok ? "success" : "provider_error",
+    status: res.status,
   });
 
   if (res.status === 429) throw new Error("AI review is rate limited — try again in a moment.");
