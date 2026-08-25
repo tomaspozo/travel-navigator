@@ -1,7 +1,8 @@
+import type { LovableAI } from "@/lib/lovable-middleware/with-lovable-ai";
 import type { AiReview, AiReviewCheck, AiReviewInput } from "./ai-review-types";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash";
+/** Raised for a gateway failure so the caller can surface the message as-is. */
+export class AiReviewUnavailable extends Error {}
 
 const CHECK_SCHEMA = {
   type: "object",
@@ -18,10 +19,7 @@ function fallbackCheck(summary: string): AiReviewCheck {
   return { status: "warn", summary, suggestion: "Try running the review again." };
 }
 
-export async function reviewTravelRequest(input: AiReviewInput): Promise<AiReview> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("AI review is not configured.");
-
+export async function reviewTravelRequest(ai: LovableAI, input: AiReviewInput): Promise<AiReview> {
   const nights = input.hotel_nights;
   const prompt = `You are the travel-policy reviewer for a company travel approval tool.
 
@@ -51,49 +49,28 @@ Run exactly three checks and be strict but fair:
 
 Keep every summary under 320 characters, plain language, addressed to the requester.`;
 
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: "user", content: prompt }],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "submit_review",
-            description: "Return the three validation results.",
-            parameters: {
-              type: "object",
-              properties: {
-                description_quality: CHECK_SCHEMA,
-                event_type_fit: CHECK_SCHEMA,
-                budget_realism: CHECK_SCHEMA,
-              },
-              required: ["description_quality", "event_type_fit", "budget_realism"],
-              additionalProperties: false,
-            },
-          },
+  // The gateway URL, the API key, and what 402/429 mean are the middleware's
+  // business now. This module owns the prompt, the tool schema, and parsing.
+  const result = await ai.toolCall({
+    prompt,
+    tool: {
+      name: "submit_review",
+      description: "Return the three validation results.",
+      parameters: {
+        type: "object",
+        properties: {
+          description_quality: CHECK_SCHEMA,
+          event_type_fit: CHECK_SCHEMA,
+          budget_realism: CHECK_SCHEMA,
         },
-      ],
-      tool_choice: { type: "function", function: { name: "submit_review" } },
-    }),
+        required: ["description_quality", "event_type_fit", "budget_realism"],
+        additionalProperties: false,
+      },
+    },
   });
 
-  if (res.status === 429) throw new Error("AI review is rate limited — try again in a moment.");
-  if (res.status === 402) throw new Error("AI credits are exhausted for this workspace.");
-  if (!res.ok) {
-    console.error("AI gateway error", res.status, await res.text());
-    throw new Error("The AI reviewer is unavailable right now.");
-  }
-
-  const payload = (await res.json()) as {
-    choices?: { message?: { tool_calls?: { function?: { arguments?: string } }[] } }[];
-  };
-  const raw = payload.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  if (!result.ok) throw new AiReviewUnavailable(result.message);
+  const raw = result.arguments;
 
   let parsed: Partial<Record<keyof AiReview, AiReviewCheck>> = {};
   try {

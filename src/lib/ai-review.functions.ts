@@ -1,10 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseStartMiddleware, userId as currentUserId } from "@/lib/middleware/supabase-start";
+import { withLovableAI } from "@/lib/lovable-middleware/with-lovable-ai";
 import { z } from "zod";
 import type { AiReview } from "./ai-review-types";
 
-/** Gate only. This endpoint reads through RLS and never needs service-role. */
-const authed = supabaseStartMiddleware({ auth: "user", middleware: [] });
+/**
+ * Reads through RLS and calls the Lovable AI gateway. Deliberately no
+ * withSupabaseAdminClient — this endpoint has no business holding service-role.
+ */
+const authed = supabaseStartMiddleware({
+  auth: "user",
+  middleware: [withLovableAI()],
+});
 
 const inputSchema = z.object({
   destination: z.string().min(1),
@@ -48,7 +55,7 @@ export const runAiReview = createServerFn({ method: "POST" })
 
     const { reviewTravelRequest } = await import("./ai-review.server");
 
-    return reviewTravelRequest({
+    return reviewTravelRequest(context.lovableAI, {
       ...data,
       currency: "USD",
       role,
