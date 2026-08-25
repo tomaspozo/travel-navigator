@@ -282,12 +282,16 @@ function NewRequest() {
 
 
     if (!asDraft) {
-      await supabase.from("request_approvals").insert({
-        request_id: data.id,
-        stage: hasManager ? "manager" : "finance",
-        decision: "pending",
-      });
+      await supabase.from("request_approvals").upsert(
+        {
+          request_id: data.id,
+          stage: hasManager ? "manager" : "finance",
+          decision: "pending",
+        },
+        { onConflict: "request_id,stage" },
+      );
     }
+
 
     if (!asDraft) {
       try {
