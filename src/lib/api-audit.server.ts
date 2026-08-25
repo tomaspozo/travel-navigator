@@ -50,11 +50,17 @@ export async function logApiCall(
   payload: unknown = {},
 ): Promise<void> {
   try {
+    await loadKeyInfo();
+    const basePayload =
+      payload && typeof payload === "object" && !Array.isArray(payload)
+        ? (payload as Record<string, unknown>)
+        : { value: payload };
     const { error } = await supabaseAdmin.from("api_call_logs").insert({
       endpoint,
-      payload: (payload ?? {}) as never,
-      key_fingerprint: await serviceKeyFingerprint(),
+      payload: { ...basePayload, key_format: cachedFormat ?? "unknown" } as never,
+      key_fingerprint: cachedFingerprint ?? null,
     });
+
     if (error) console.error("[api-audit] insert failed", error.message);
   } catch (err) {
     console.error("[api-audit] insert threw", err);
