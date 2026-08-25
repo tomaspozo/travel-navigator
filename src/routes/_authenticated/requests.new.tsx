@@ -33,6 +33,9 @@ import {
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/requests/new")({
+  validateSearch: (search: Record<string, unknown>): { edit?: string } =>
+    typeof search['edit'] === "string" ? { edit: search['edit'] as string } : {},
+
   head: () => ({
     meta: [
       { title: "New travel request — Voyara" },
@@ -53,12 +56,15 @@ export const Route = createFileRoute("/_authenticated/requests/new")({
   component: NewRequest,
 });
 
+
 const TRANSPORT = ["flight", "train", "car rental", "personal car", "bus", "other"];
 
 function NewRequest() {
   const navigate = useNavigate();
+  const { edit: editId } = Route.useSearch();
   const { data: me } = useAppUser();
   const [saving, setSaving] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(!!editId);
 
   const [form, setForm] = useState({
     destination: "",
@@ -78,6 +84,49 @@ function NewRequest() {
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // Load an existing draft when editing.
+  useEffect(() => {
+    if (!editId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("travel_requests")
+        .select("*")
+        .eq("id", editId)
+        .maybeSingle();
+      if (cancelled) return;
+      setLoadingDraft(false);
+      if (error || !data) {
+        toast.error("Could not load that draft.");
+        return;
+      }
+      if (data.status !== "draft") {
+        toast.error("Only drafts can be edited.");
+        navigate({ to: "/requests/$id", params: { id: editId } });
+        return;
+      }
+      setForm({
+        destination: data.destination ?? "",
+        purpose: data.purpose ?? "",
+        start_date: data.start_date ?? "",
+        end_date: data.end_date ?? "",
+        transportation_type: data.transportation_type ?? "flight",
+        transportation_cost: Number(data.transportation_cost ?? 0),
+        hotel_name: data.hotel_name ?? "",
+        hotel_nightly_rate: Number(data.hotel_nightly_rate ?? 0),
+        hotel_nights: Number(data.hotel_nights ?? 0),
+        per_diem_rate: Number(data.per_diem_rate ?? 0),
+        other_costs: Number(data.other_costs ?? 0),
+        needs_booking_help: !!data.needs_booking_help,
+        exception_justification: data.exception_justification ?? "",
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editId, navigate]);
+
 
   const days = tripDays(form.start_date, form.end_date);
   const total = useMemo(() => totalBudget(form), [form]);
@@ -181,40 +230,49 @@ function NewRequest() {
 
     setSaving(true);
     const hasManager = !!me.profile?.manager_id;
-    const status = asDraft
+    const status: "draft" | "pending_manager" | "pending_finance" = asDraft
       ? "draft"
       : hasManager
         ? "pending_manager"
         : "pending_finance";
 
-    const { data, error } = await supabase
-      .from("travel_requests")
-      .insert({
-        requester_id: me.userId,
-        destination: form.destination,
-        purpose: form.purpose,
-        start_date: form.start_date,
-        end_date: form.end_date,
-        transportation_type: form.transportation_type,
-        transportation_cost: form.transportation_cost,
-        hotel_name: form.hotel_name || null,
-        hotel_nightly_rate: form.hotel_nightly_rate,
-        hotel_nights: form.hotel_nights,
-        per_diem_rate: form.per_diem_rate,
-        other_costs: form.other_costs,
-        total_budget: total,
-        needs_booking_help: form.needs_booking_help,
-        policy_violations: violations as unknown as never,
-        ai_review: (aiReview ?? null) as unknown as never,
-        ai_reviewed_at: aiReview?.reviewed_at ?? null,
-        exception_justification: form.exception_justification || null,
-        human_review_requested: mode === "human",
-        human_review_reason: mode === "human" ? humanReason : null,
-        status,
-        submitted_at: asDraft ? null : new Date().toISOString(),
-      })
-      .select("id")
-      .single();
+
+    const values = {
+      destination: form.destination,
+      purpose: form.purpose,
+      start_date: form.start_date,
+      end_date: form.end_date,
+      transportation_type: form.transportation_type,
+      transportation_cost: form.transportation_cost,
+      hotel_name: form.hotel_name || null,
+      hotel_nightly_rate: form.hotel_nightly_rate,
+      hotel_nights: form.hotel_nights,
+      per_diem_rate: form.per_diem_rate,
+      other_costs: form.other_costs,
+      total_budget: total,
+      needs_booking_help: form.needs_booking_help,
+      policy_violations: violations as unknown as never,
+      ai_review: (aiReview ?? null) as unknown as never,
+      ai_reviewed_at: aiReview?.reviewed_at ?? null,
+      exception_justification: form.exception_justification || null,
+      human_review_requested: mode === "human",
+      human_review_reason: mode === "human" ? humanReason : null,
+      status,
+      submitted_at: asDraft ? null : new Date().toISOString(),
+    };
+
+    const { data, error } = editId
+      ? await supabase
+          .from("travel_requests")
+          .update(values)
+          .eq("id", editId)
+          .select("id")
+          .single()
+      : await supabase
+          .from("travel_requests")
+          .insert({ requester_id: me.userId, ...values })
+          .select("id")
+          .single();
 
     if (error || !data) {
       setSaving(false);
@@ -222,13 +280,18 @@ function NewRequest() {
       return;
     }
 
+
     if (!asDraft) {
-      await supabase.from("request_approvals").insert({
-        request_id: data.id,
-        stage: hasManager ? "manager" : "finance",
-        decision: "pending",
-      });
+      await supabase.from("request_approvals").upsert(
+        {
+          request_id: data.id,
+          stage: hasManager ? "manager" : "finance",
+          decision: "pending",
+        },
+        { onConflict: "request_id,stage" },
+      );
     }
+
 
     if (!asDraft) {
       try {
@@ -258,6 +321,10 @@ function NewRequest() {
     navigate({ to: "/requests/$id", params: { id: data.id } });
   }
 
+  if (loadingDraft) {
+    return <p className="text-sm text-muted-foreground">Loading draft…</p>;
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
@@ -265,11 +332,14 @@ function NewRequest() {
       </Button>
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New travel request</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {editId ? "Edit draft request" : "New travel request"}
+        </h1>
         <p className="text-sm text-muted-foreground">
           Costs are checked live against your travel policy.
         </p>
       </div>
+
 
       <section className="space-y-4 rounded-xl border bg-card p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
