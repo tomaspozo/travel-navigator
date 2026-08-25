@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseStartMiddleware, userId as currentUserId } from "@/lib/middleware/supabase-start";
 import { z } from "zod";
 import type { AiReview } from "./ai-review-types";
+
+/** Gate only. This endpoint reads through RLS and never needs service-role. */
+const authed = supabaseStartMiddleware({ auth: "user", middleware: [] });
 
 const inputSchema = z.object({
   destination: z.string().min(1),
@@ -19,10 +22,11 @@ const inputSchema = z.object({
 });
 
 export const runAiReview = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data, context }): Promise<AiReview> => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const userId = currentUserId(context);
 
     const [{ data: roleRows }, { data: policies }] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", userId),

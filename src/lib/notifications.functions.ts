@@ -1,22 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseStartMiddleware, userId } from "@/lib/middleware/supabase-start";
 import { z } from "zod";
+
+/** Gate only — no service-role client, no email. Those are added per endpoint. */
+const authed = supabaseStartMiddleware({ auth: "user", middleware: [] });
 
 const eventSchema = z.object({
   requestId: z.string().uuid(),
-  event: z.enum([
-    "submitted",
-    "approved",
-    "rejected",
-    "escalated",
-    "human_review_requested",
-  ]),
+  event: z.enum(["submitted", "approved", "rejected", "escalated", "human_review_requested"]),
   reason: z.string().max(2000).optional(),
 });
 
 /** Fan-out notifications (in-app + email) for a travel request event. */
 export const notifyRequestEvent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .inputValidator((data: unknown) => eventSchema.parse(data))
   .handler(async ({ data, context }) => {
     // The caller must be able to see the request under RLS.
@@ -63,7 +60,11 @@ export const notifyRequestEvent = createServerFn({ method: "POST" })
           title: `Your travel request was ${approved ? "approved" : "rejected"} — ${req.destination}`,
           requestId: req.id,
           body: `${trip}\n\n${
-            data.reason ? `Reviewer comment: ${data.reason}` : approved ? "You're good to go." : "No comment was left."
+            data.reason
+              ? `Reviewer comment: ${data.reason}`
+              : approved
+                ? "You're good to go."
+                : "No comment was left."
           }`,
         });
       }
@@ -80,12 +81,12 @@ export const notifyRequestEvent = createServerFn({ method: "POST" })
   });
 
 export const markNotificationsRead = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .handler(async ({ context }) => {
     await context.supabase
       .from("notifications")
       .update({ read_at: new Date().toISOString() })
       .is("read_at", null)
-      .eq("user_id", context.userId);
+      .eq("user_id", userId(context));
     return { ok: true };
   });
