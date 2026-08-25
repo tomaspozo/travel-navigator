@@ -33,9 +33,9 @@ import {
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/requests/new")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    edit: typeof search['edit'] === "string" ? (search['edit'] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { edit?: string } =>
+    typeof search['edit'] === "string" ? { edit: search['edit'] as string } : {},
+
   head: () => ({
     meta: [
       { title: "New travel request — Voyara" },
