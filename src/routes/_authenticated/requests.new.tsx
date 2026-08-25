@@ -61,8 +61,10 @@ const TRANSPORT = ["flight", "train", "car rental", "personal car", "bus", "othe
 
 function NewRequest() {
   const navigate = useNavigate();
+  const { edit: editId } = Route.useSearch();
   const { data: me } = useAppUser();
   const [saving, setSaving] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(!!editId);
 
   const [form, setForm] = useState({
     destination: "",
@@ -82,6 +84,49 @@ function NewRequest() {
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // Load an existing draft when editing.
+  useEffect(() => {
+    if (!editId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("travel_requests")
+        .select("*")
+        .eq("id", editId)
+        .maybeSingle();
+      if (cancelled) return;
+      setLoadingDraft(false);
+      if (error || !data) {
+        toast.error("Could not load that draft.");
+        return;
+      }
+      if (data.status !== "draft") {
+        toast.error("Only drafts can be edited.");
+        navigate({ to: "/requests/$id", params: { id: editId } });
+        return;
+      }
+      setForm({
+        destination: data.destination ?? "",
+        purpose: data.purpose ?? "",
+        start_date: data.start_date ?? "",
+        end_date: data.end_date ?? "",
+        transportation_type: data.transportation_type ?? "flight",
+        transportation_cost: Number(data.transportation_cost ?? 0),
+        hotel_name: data.hotel_name ?? "",
+        hotel_nightly_rate: Number(data.hotel_nightly_rate ?? 0),
+        hotel_nights: Number(data.hotel_nights ?? 0),
+        per_diem_rate: Number(data.per_diem_rate ?? 0),
+        other_costs: Number(data.other_costs ?? 0),
+        needs_booking_help: !!data.needs_booking_help,
+        exception_justification: data.exception_justification ?? "",
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editId, navigate]);
+
 
   const days = tripDays(form.start_date, form.end_date);
   const total = useMemo(() => totalBudget(form), [form]);
