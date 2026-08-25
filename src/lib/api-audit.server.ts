@@ -1,12 +1,20 @@
 /**
  * Compliance audit log for server-side API calls.
  *
- * SECURITY: the service role key itself is never stored. We persist a
- * truncated SHA-256 fingerprint instead — stable for a given key (so you can
- * tell which key was used and when it was rotated) but not reversible and
- * useless to anyone who reads the table, a backup, or a log dump.
+ * SECURITY: the service role key itself is never stored — not in full and not
+ * as a prefix. We persist the first 5 hex characters of its SHA-256 digest:
+ * short, stable for a given key (so you can see which key was used and when it
+ * was rotated), not reversible, and worthless if the table, a backup or a log
+ * is exposed.
+ *
+ * Note: a raw 5-character key prefix would be useless here anyway — every
+ * Supabase key opens with the same fixed marker (`sb_se`, or `eyJhb` for legacy
+ * JWT keys), so it would be identical on every row and unchanged by rotation.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+/** Characters of the digest kept in `api_call_logs.key_fingerprint`. */
+const FINGERPRINT_LENGTH = 5;
 
 let cachedFingerprint: string | null | undefined;
 
@@ -24,9 +32,10 @@ async function serviceKeyFingerprint(): Promise<string | null> {
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  cachedFingerprint = `sha256:${hex.slice(0, 16)}`;
+  cachedFingerprint = hex.slice(0, FINGERPRINT_LENGTH);
   return cachedFingerprint;
 }
+
 
 /**
  * Record an API call. Never throws — auditing must not break the caller.
